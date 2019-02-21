@@ -1,0 +1,7 @@
+name = "BALUtils"
+uuid = "0905a5ce-360c-11e9-2081-2954d989a4fb"
+authors = ["Tristan Konolige <tristan.konolige@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
