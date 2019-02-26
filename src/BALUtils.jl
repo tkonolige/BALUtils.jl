@@ -24,6 +24,10 @@ struct BA
     points :: Vector{NTuple{3, Float64}}
 end
 
+function Base.show(io :: IO, ba :: BA)
+    print(io, "Bundle adjustment problem with $(length(ba.cameras)) cameras, $(length(ba.points)) points, $(sum(length.(ba.observations))) observations")
+end
+
 function read_bal(filename)
     f = open(filename)
     line = readline(f)
