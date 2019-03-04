@@ -2,7 +2,7 @@ module BALUtils
 
 using LightGraphs
 
-export Camera, pose, axisangle, BA, read_bal, visibility_graph
+export Camera, pose, axisangle, BA, read_bal, visibility_graph, restrict
 
 struct Camera
     pose :: NTuple{3, Float64} # in axis-angle format?
@@ -22,6 +22,21 @@ struct BA
     cameras :: Vector{Camera}
     observations :: Vector{Vector{Tuple{Int64,Float64,Float64}}}
     points :: Vector{NTuple{3, Float64}}
+end
+
+function restrict(ba :: BA, inds; ignore_points=false)
+    cams = ba.cameras[inds]
+    obs = ba.observations[inds]
+    obs, points = if !ignore_points
+        ps = unique(vcat(map(x -> map(y -> y[1], x), obs)...))
+        d = Dict(zip(ps, 1:length(ps)))
+        points = ba.points[ps]
+        obs = map(x -> map(y->(d[y[1]],y[2],y[3]), x), obs)
+        obs, points
+    else
+        obs, ba.points
+    end
+    BA(cams, obs, points)
 end
 
 function Base.show(io :: IO, ba :: BA)
