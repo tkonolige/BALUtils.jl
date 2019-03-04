@@ -2,7 +2,7 @@ module BALUtils
 
 using LightGraphs
 
-export Camera, pose, axisangle, BA, read_bal, visibility_graph, restrict
+export Camera, pose, axisangle, BA, read_bal, visibility_graph, restrict, write_bal
 
 struct Camera
     pose :: NTuple{3, Float64} # in axis-angle format?
@@ -85,6 +85,23 @@ function visibility_graph(ba :: BA)
     end
     m = adjacency_matrix(g)
     (m * m)[1:length(ba.cameras), 1:length(ba.cameras)]
+end
+
+function write_bal(filepath :: AbstractString, ba :: BA)
+    open(filepath, "w") do f
+        write(f, "$(length(ba.cameras)) $(length(ba.points)) $(length(ba.observations))\n")
+        for (cam, obs) in enumerate(ba.observations)
+            for (point, x, y) in obs
+                write(f, "$cam $point $x $y\n")
+            end
+        end
+        for cam in ba.cameras
+            write(f, "$(cam.pose[1]) $(cam.pose[2]) $(cam.pose[3]) $(cam.rotation[1]) $(cam.rotation[2]) $(cam.rotation[3]) $(cam.intrinsics[1]) $(cam.intrinsics[2]) $(cam.intrinsics[3])\n")
+        end
+        for point in ba.points
+            write(f, "$(point[1]) $(point[2]) $(point[3])\n")
+        end
+    end
 end
 
 end # module
