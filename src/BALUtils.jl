@@ -1,27 +1,29 @@
 module BALUtils
 
 using LightGraphs
+using StaticArrays
 
 export Camera, pose, axisangle, BA, read_bal, visibility_graph, restrict, write_bal
 
 struct Camera
-    pose :: NTuple{3, Float64} # in axis-angle format?
-    rotation :: NTuple{3, Float64}
-    intrinsics :: NTuple{3, Float64}
+    pose :: SVector{3,Float64} # in axis-angle format?
+    rotation :: SVector{3,Float64}
+    intrinsics :: SVector{3,Float64}
 end
 
 pose(c :: Camera) = c.pose
+Base.vec(c :: Camera) = vcat(c.pose, c.rotation, c.intrinsics)
 
 function axisangle(x :: Array{Float64, 2})
     u = [x[3,2]-x[2,3], x[3,1]-x[1,3], x[2,1] - x[1,2]]
     angle = acos((trace(x)-1)/2)
-    tuple((u / norm(u) * 2 * sin(angle))...)
+    SVector{3,Float64}((u / norm(u) * 2 * sin(angle))...)
 end
 
 struct BA
     cameras :: Vector{Camera}
     observations :: Vector{Vector{Tuple{Int64,Float64,Float64}}}
-    points :: Vector{NTuple{3, Float64}}
+    points :: Vector{SVector{3,Float64}}
 end
 
 function restrict(ba :: BA, inds; ignore_points=false)
@@ -63,14 +65,14 @@ function read_bal(filename)
         t = map(1:9) do j
             parse(Float64, readline(f))
         end
-        Camera(tuple(t[4:6]...), tuple(t[1:3]...), tuple(t[7:9]...))
+        Camera(SVector{3,Float64}(t[4:6]...), SVector{3,Float64}(t[1:3]...), SVector{3,Float64}(t[7:9]...))
     end
 
     points = map(1:num_points) do i
         t = map(1:3) do j
             parse(Float64, readline(f))
         end
-        tuple(t...)
+        SVector{3,Float64}(t...)
     end
 
     BA(cameras, obs, points)
