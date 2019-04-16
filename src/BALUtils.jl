@@ -2,17 +2,44 @@ module BALUtils
 
 using LightGraphs
 using StaticArrays
+using LinearAlgebra
 
-export Camera, pose, axisangle, BA, read_bal, visibility_graph, restrict, write_bal
+export Camera, pose, axisangle, BA, readbal, visibility_graph, restrict, writebal, center
 
-struct Camera
-    pose :: SVector{3,Float64} # in axis-angle format?
-    rotation :: SVector{3,Float64}
-    intrinsics :: SVector{3,Float64}
+function rodrigues_rotate(angle_axis :: AbstractArray, point :: AbstractArray)
+    theta = norm(angle_axis)
+    axis = normalize(angle_axis)
+    point * cos(theta) + cross(axis, point) * sin(theta) + axis * dot(axis, point) * (1 - cos(theta))
+end
+
+"""
+Rotation represented as a 3 vector who's norm is the angle to rotate around the
+normalized vector.
+"""
+struct AngleAxis{T <: Number}
+    angleaxis :: SVector{3, T}
+end
+
+function AngleAxis(mat :: Array{<: Number, 2})
+    AngleAxis(axisangle(mat))
+end
+
+function Base.:*(v :: AngleAxis, x :: AbstractArray)
+    rodrigues_rotate(v.angleaxis, x)
+end
+
+Base.transpose(v :: AngleAxis) = AngleAxis(-v.angleaxis)
+Base.adjoint(v :: AngleAxis) = transpose(v)
+
+struct Camera{T}
+    pose :: SVector{3,T}
+    rotation :: AngleAxis{T}
+    intrinsics :: SVector{3,T}
 end
 
 pose(c :: Camera) = c.pose
-Base.vec(c :: Camera) = vcat(c.pose, c.rotation, c.intrinsics)
+center(c :: Camera) = -(c.rotation' * pose(c))
+Base.vec(c :: Camera) = vcat(c.pose, c.rotation.angleaxis, c.intrinsics)
 
 function axisangle(x :: Array{Float64, 2})
     u = [x[3,2]-x[2,3], x[3,1]-x[1,3], x[2,1] - x[1,2]]
@@ -45,7 +72,7 @@ function Base.show(io :: IO, ba :: BA)
     print(io, "Bundle adjustment problem with $(length(ba.cameras)) cameras, $(length(ba.points)) points, $(sum(length.(ba.observations))) observations")
 end
 
-function read_bal(filename)
+function readbal(filename)
     f = open(filename)
     line = readline(f)
     (num_cameras, num_points, num_observations) = map(x->parse(Int,x), split(line))
@@ -65,7 +92,7 @@ function read_bal(filename)
         t = map(1:9) do j
             parse(Float64, readline(f))
         end
-        Camera(SVector{3,Float64}(t[4:6]...), SVector{3,Float64}(t[1:3]...), SVector{3,Float64}(t[7:9]...))
+        Camera(SVector{3,Float64}(t[4:6]...), AngleAxis(SVector{3,Float64}(t[1:3]...)), SVector{3,Float64}(t[7:9]...))
     end
 
     points = map(1:num_points) do i
@@ -89,7 +116,7 @@ function visibility_graph(ba :: BA)
     (m * m)[1:length(ba.cameras), 1:length(ba.cameras)]
 end
 
-function write_bal(filepath :: AbstractString, ba :: BA)
+function writebal(filepath :: AbstractString, ba :: BA)
     open(filepath, "w") do f
         write(f, "$(length(ba.cameras)) $(length(ba.points)) $(length(ba.observations))\n")
         for (cam, obs) in enumerate(ba.observations)
