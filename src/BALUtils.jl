@@ -37,6 +37,13 @@ struct Camera{T}
     intrinsics :: SVector{3,T}
 end
 
+"""
+Construct a camera from a rotation, translation, instrinsics vector.
+"""
+function Camera(x :: AbstractArray)
+    Camera(SVector{3,Float64}(x[4:6]), AngleAxis(SVector{3,Float64}(x[1:3])), SVector{3,Float64}(x[7:9]))
+end
+
 pose(c :: Camera) = c.pose
 center(c :: Camera) = -(c.rotation' * pose(c))
 Base.vec(c :: Camera) = vcat(c.pose, c.rotation.angleaxis, c.intrinsics)
@@ -92,7 +99,7 @@ function readbal(filename)
         t = map(1:9) do j
             parse(Float64, readline(f))
         end
-        Camera(SVector{3,Float64}(t[4:6]...), AngleAxis(SVector{3,Float64}(t[1:3]...)), SVector{3,Float64}(t[7:9]...))
+        Camera(t)
     end
 
     points = map(1:num_points) do i
