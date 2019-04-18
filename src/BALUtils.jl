@@ -4,7 +4,7 @@ using LightGraphs
 using StaticArrays
 using LinearAlgebra
 
-export Camera, pose, axisangle, BA, readbal, visibility_graph, restrict, writebal, center
+export Camera, pose, axisangle, BA, readbal, visibility_graph, restrict, writebal, center, AngleAxis
 
 function rodrigues_rotate(angle_axis :: AbstractArray, point :: AbstractArray)
     theta = norm(angle_axis)
@@ -26,6 +26,17 @@ end
 
 function Base.:*(v :: AngleAxis, x :: AbstractArray)
     rodrigues_rotate(v.angleaxis, x)
+end
+
+# from https://math.stackexchange.com/questions/382760/composition-of-two-axis-angle-rotations
+function Base.:*(x :: AngleAxis, y :: AngleAxis)
+    alpha = norm(x.angleaxis)
+    beta = norm(y.angleaxis)
+    ax = normalize(x.angleaxis)
+    ay = normalize(y.angleaxis)
+    gamma = 2 * acos(cos(alpha/2) * cos(beta/2) - sin(alpha/2) * sin(beta/2) * dot(ax, ay))
+    axis = (sin(alpha/2) * cos(beta/2) * ax + cos(alpha/2) * sin(beta/2) * ay - sin(alpha/2) * sin(beta/2)  * cross(ax, ay)) / sin(gamma/2)
+    axis * gamma
 end
 
 Base.transpose(v :: AngleAxis) = AngleAxis(-v.angleaxis)
