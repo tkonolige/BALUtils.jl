@@ -36,7 +36,7 @@ function Base.:*(x :: AngleAxis, y :: AngleAxis)
     ay = normalize(y.angleaxis)
     gamma = 2 * acos(cos(alpha/2) * cos(beta/2) - sin(alpha/2) * sin(beta/2) * dot(ax, ay))
     axis = (sin(alpha/2) * cos(beta/2) * ax + cos(alpha/2) * sin(beta/2) * ay - sin(alpha/2) * sin(beta/2)  * cross(ax, ay)) / sin(gamma/2)
-    axis * gamma
+    AngleAxis(axis * gamma)
 end
 
 Base.transpose(v :: AngleAxis) = AngleAxis(-v.angleaxis)
