@@ -143,7 +143,8 @@ function writebal(filepath :: AbstractString, ba :: BA)
         write(f, "$(num_cameras(ba)) $(num_points(ba)) $(num_observations(ba))\n")
         for (cam, obs) in enumerate(ba.observations)
             for (point, x, y) in obs
-                write(f, "$cam $point $x $y\n")
+                # zero indexed
+                write(f, "$(cam - 1) $(point - 1) $x $y\n")
             end
         end
         for cam in ba.cameras
