@@ -143,7 +143,10 @@ function writebal(filepath :: AbstractString, ba :: BA)
             end
         end
         for cam in ba.cameras
-            write(f, "$(cam.pose[1]) $(cam.pose[2]) $(cam.pose[3]) $(cam.rotation[1]) $(cam.rotation[2]) $(cam.rotation[3]) $(cam.intrinsics[1]) $(cam.intrinsics[2]) $(cam.intrinsics[3])\n")
+            for v in vec(cam)
+                write("$v ")
+            end
+            write("\n")
         end
         for point in ba.points
             write(f, "$(point[1]) $(point[2]) $(point[3])\n")
