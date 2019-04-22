@@ -71,14 +71,27 @@ struct BA
     points :: Vector{SVector{3,Float64}}
 end
 
-function restrict(ba :: BA, inds; ignore_points=false)
+function restrict(ba :: BA, inds; ignore_points=false, vis_thresh=2)
     cams = ba.cameras[inds]
     obs = ba.observations[inds]
     obs, points = if !ignore_points
-        ps = unique(vcat(map(x -> map(y -> y[1], x), obs)...))
+        # get all points still visible
+        ps = vcat(map(x -> map(y -> y[1], x), obs)...)
+        # remove points visible by only one camera (or threshold)
+        ps = filter(x -> count(i -> i == x, ps) >= vis_thresh, unique(ps))
+        # remap point ids
         d = Dict(zip(ps, 1:length(ps)))
         points = ba.points[ps]
-        obs = map(x -> map(y->(d[y[1]],y[2],y[3]), x), obs)
+        obs = map(obs) do ob
+            vs = []
+            for (i, x, y) in ob
+                # drop points
+                if i in keys(d)
+                    push!(vs, (d[i], x, y))
+                end
+            end
+            vs
+        end
         obs, points
     else
         obs, ba.points
