@@ -4,7 +4,7 @@ using LightGraphs
 using StaticArrays
 using LinearAlgebra
 
-export Camera, pose, axisangle, BA, readbal, visibility_graph, restrict, writebal, center, AngleAxis
+export Camera, pose, axisangle, BA, readbal, visibility_graph, restrict, writebal, center, AngleAxis, num_cameras, num_points, num_observations
 
 function rodrigues_rotate(angle_axis :: AbstractArray, point :: AbstractArray)
     theta = norm(angle_axis)
@@ -86,6 +86,10 @@ function restrict(ba :: BA, inds; ignore_points=false)
     BA(cams, obs, points)
 end
 
+num_cameras(ba :: BA) = length(ba.cameras)
+num_points(ba :: BA) = length(ba.points)
+num_observations(ba :: BA) = sum(length.(ba.observations))
+
 function Base.show(io :: IO, ba :: BA)
     print(io, "Bundle adjustment problem with $(length(ba.cameras)) cameras, $(length(ba.points)) points, $(sum(length.(ba.observations))) observations")
 end
@@ -136,7 +140,7 @@ end
 
 function writebal(filepath :: AbstractString, ba :: BA)
     open(filepath, "w") do f
-        write(f, "$(length(ba.cameras)) $(length(ba.points)) $(length(ba.observations))\n")
+        write(f, "$(num_cameras(ba)) $(num_points(ba)) $(num_observations(ba))\n")
         for (cam, obs) in enumerate(ba.observations)
             for (point, x, y) in obs
                 write(f, "$cam $point $x $y\n")
