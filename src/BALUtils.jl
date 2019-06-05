@@ -108,36 +108,72 @@ function Base.show(io :: IO, ba :: BA)
 end
 
 function readbal(filename)
-    f = open(filename)
-    line = readline(f)
-    (num_cameras, num_points, num_observations) = map(x->parse(Int,x), split(line))
+    if extension(filename) == "bbal"
+        open(filename, "b") do f
+            num_cameras = read(f, UInt64) |> ntoh
+            num_points = read(f, UInt64) |> ntoh
+            num_observations = read(f, UInt64) |> ntoh
 
-    obs = [Vector{Tuple{Int64,Float64,Float64}}() for _ in  1:num_cameras]
+            obs = map(1:num_cameras) do i
+                nobs = read(f, UInt64) |> ntoh
+                obs = Vector{Tuple{Int64,Float64,Float64}}()
+                sizehint!(obs, nobs)
+                sizehint!(obs[i], nobs)
+                for j in 1:nobs
+                    p = read(f, UInt64) |> ntoh
+                    u = read(f, Float64) |> ntoh
+                    v = read(f, Float64) |> ntoh
+                    push!(obs, (p+1, (u, v)))
+                end
+                obs
+            end
 
-    for i in 1:num_observations
-        (c_ind_, p_ind_, x_, y_) = split(readline(f))
-        c_ind = parse(Int, c_ind_)+1
-        p_ind = parse(Int, p_ind_)+1
-        x = parse(Float64, x_)
-        y = parse(Float64, y_)
-        push!(obs[c_ind], (p_ind, x, y))
-    end
+            cameras = map(1:num_cameras) do i
+                ary = Array{Float64}(undef, 9)
+                read!(io, ary)
+                Camera(ntoh.(ary))
+            end
 
-    cameras = map(1:num_cameras) do i
-        t = map(1:9) do j
-            parse(Float64, readline(f))
+            points = map(1:num_points) do i
+                ary = Array{Float64}(undef, 3)
+                read!(io, ary)
+                SVector{3,Float64}(ntoh.(ary))
+            end
+
+            BA(cameras, obs, points)
         end
-        Camera(t)
-    end
+    else
+        f = open(filename)
+        line = readline(f)
+        (num_cameras, num_points, num_observations) = map(x->parse(Int,x), split(line))
 
-    points = map(1:num_points) do i
-        t = map(1:3) do j
-            parse(Float64, readline(f))
+        obs = [Vector{Tuple{Int64,Float64,Float64}}() for _ in  1:num_cameras]
+
+        for i in 1:num_observations
+            (c_ind_, p_ind_, x_, y_) = split(readline(f))
+            c_ind = parse(Int, c_ind_)+1
+            p_ind = parse(Int, p_ind_)+1
+            x = parse(Float64, x_)
+            y = parse(Float64, y_)
+            push!(obs[c_ind], (p_ind, x, y))
         end
-        SVector{3,Float64}(t...)
-    end
 
-    BA(cameras, obs, points)
+        cameras = map(1:num_cameras) do i
+            t = map(1:9) do j
+                parse(Float64, readline(f))
+            end
+            Camera(t)
+        end
+
+        points = map(1:num_points) do i
+            t = map(1:3) do j
+                parse(Float64, readline(f))
+            end
+            SVector{3,Float64}(t...)
+        end
+
+        BA(cameras, obs, points)
+    end
 end
 
 function visibility_graph(ba :: BA)
