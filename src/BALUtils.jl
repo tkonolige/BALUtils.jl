@@ -108,8 +108,8 @@ function Base.show(io :: IO, ba :: BA)
 end
 
 function readbal(filename)
-    if extension(filename) == "bbal"
-        open(filename, "b") do f
+    if splitext(filename)[2] == ".bbal"
+        open(filename) do f
             num_cameras = read(f, UInt64) |> ntoh
             num_points = read(f, UInt64) |> ntoh
             num_observations = read(f, UInt64) |> ntoh
@@ -118,25 +118,24 @@ function readbal(filename)
                 nobs = read(f, UInt64) |> ntoh
                 obs = Vector{Tuple{Int64,Float64,Float64}}()
                 sizehint!(obs, nobs)
-                sizehint!(obs[i], nobs)
                 for j in 1:nobs
                     p = read(f, UInt64) |> ntoh
                     u = read(f, Float64) |> ntoh
                     v = read(f, Float64) |> ntoh
-                    push!(obs, (p+1, (u, v)))
+                    push!(obs, (p+1, u, v))
                 end
                 obs
             end
 
             cameras = map(1:num_cameras) do i
                 ary = Array{Float64}(undef, 9)
-                read!(io, ary)
+                read!(f, ary)
                 Camera(ntoh.(ary))
             end
 
             points = map(1:num_points) do i
                 ary = Array{Float64}(undef, 3)
-                read!(io, ary)
+                read!(f, ary)
                 SVector{3,Float64}(ntoh.(ary))
             end
 
