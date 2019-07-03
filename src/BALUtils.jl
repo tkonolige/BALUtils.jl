@@ -3,6 +3,7 @@ module BALUtils
 using LightGraphs
 using StaticArrays
 using LinearAlgebra
+using Rotations
 
 export Camera, pose, axisangle, BA, readbal, visibility_graph, restrict, writebal, center, AngleAxis, num_cameras, num_points, num_observations
 
@@ -44,7 +45,7 @@ Base.adjoint(v :: AngleAxis) = transpose(v)
 
 struct Camera{T}
     pose :: SVector{3,T}
-    rotation :: AngleAxis{T}
+    rotation :: RodriguesVec{T}
     intrinsics :: SVector{3,T}
 end
 
@@ -52,7 +53,7 @@ end
 Construct a camera from a rotation, translation, instrinsics vector.
 """
 function Camera(x :: AbstractArray)
-    Camera(SVector{3,Float64}(x[4:6]), AngleAxis(SVector{3,Float64}(x[1:3])), SVector{3,Float64}(x[7:9]))
+    Camera(SVector{3,Float64}(x[4:6]), RodriguesVec(x[1], x[2], x[3]), SVector{3,Float64}(x[7:9]))
 end
 
 pose(c :: Camera) = c.pose
