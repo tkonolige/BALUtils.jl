@@ -1,7 +1,7 @@
 module BALUtils
 
-using LightGraphs
 using StaticArrays
+using SparseArrays
 using LinearAlgebra
 using Rotations
 
@@ -177,14 +177,18 @@ function readbal(filename)
 end
 
 function visibility_graph(ba :: BA)
-    g = SimpleGraph(length(ba.points) + length(ba.cameras))
+    is = []
+    sizehint!(is, num_observations(ba))
+    js = []
+    sizehint!(js, num_observations(ba))
     for (i, obs) in enumerate(ba.observations)
         for (j, _, _) in obs
-            add_edge!(g, i, length(ba.cameras) + j)
+            push!(is, i)
+            push!(js, j)
         end
     end
-    m = adjacency_matrix(g)
-    (m * m)[1:length(ba.cameras), 1:length(ba.cameras)]
+    m = sparse(is, js, ones(Int, length(js)))
+    m * m'
 end
 
 function writebal(filepath :: AbstractString, ba :: BA)
