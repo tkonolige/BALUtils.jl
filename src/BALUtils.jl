@@ -58,7 +58,7 @@ end
 
 pose(c :: Camera) = c.pose
 center(c :: Camera) = -(c.rotation' * pose(c))
-Base.vec(c :: Camera) = vcat(c.pose, c.rotation.angleaxis, c.intrinsics)
+Base.vec(c :: Camera) = vcat(c.pose, [c.rotation.sx, c.rotation.sy, c.rotation.sz], c.intrinsics)
 
 function axisangle(x :: Array{Float64, 2})
     u = [x[3,2]-x[2,3], x[3,1]-x[1,3], x[2,1] - x[1,2]]
