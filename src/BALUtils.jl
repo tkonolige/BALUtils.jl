@@ -58,7 +58,7 @@ end
 
 pose(c :: Camera) = c.pose
 center(c :: Camera) = -(c.rotation' * pose(c))
-Base.vec(c :: Camera) = vcat(c.pose, [c.rotation.sx, c.rotation.sy, c.rotation.sz], c.intrinsics)
+Base.vec(c :: Camera) = vcat([c.rotation.sx, c.rotation.sy, c.rotation.sz], c.pose, c.intrinsics)
 
 function axisangle(x :: Array{Float64, 2})
     u = [x[3,2]-x[2,3], x[3,1]-x[1,3], x[2,1] - x[1,2]]
@@ -193,21 +193,44 @@ end
 
 function writebal(filepath :: AbstractString, ba :: BA)
     open(filepath, "w") do f
-        write(f, "$(num_cameras(ba)) $(num_points(ba)) $(num_observations(ba))\n")
-        for (cam, obs) in enumerate(ba.observations)
-            for (point, x, y) in obs
-                # zero indexed
-                write(f, "$(cam - 1) $(point - 1) $x $y\n")
+        if splitext(filepath)[2] == ".bbal"
+            write(f, UInt64(num_cameras(ba)) |> hton)
+            write(f, UInt64(num_points(ba)) |> hton)
+            write(f, UInt64(num_observations(ba)) |> hton)
+
+            for (cam, obs) in enumerate(ba.observations)
+                write(f, UInt64(length(obs)) |> hton)
+                for (point, x, y) in obs
+                    write(f, UInt64(point - 1) |> hton)
+                    write(f, Float64(x) |> hton)
+                    write(f, Float64(y) |> hton)
+                end
             end
-        end
-        for cam in ba.cameras
-            for v in vec(cam)
-                write(f, "$v ")
+
+            for c in ba.cameras
+                write(f, hton.(Float64.(vec(c))))
             end
-            write(f, "\n")
-        end
-        for point in ba.points
-            write(f, "$(point[1]) $(point[2]) $(point[3])\n")
+
+            for p in ba.points
+                write(f, hton.(Float64.(p)))
+            end
+        else
+            write(f, "$(num_cameras(ba)) $(num_points(ba)) $(num_observations(ba))\n")
+            for (cam, obs) in enumerate(ba.observations)
+                for (point, x, y) in obs
+                    # zero indexed
+                    write(f, "$(cam - 1) $(point - 1) $x $y\n")
+                end
+            end
+            for cam in ba.cameras
+                for v in vec(cam)
+                    write(f, "$v ")
+                end
+                write(f, "\n")
+            end
+            for point in ba.points
+                write(f, "$(point[1]) $(point[2]) $(point[3])\n")
+            end
         end
     end
 end
