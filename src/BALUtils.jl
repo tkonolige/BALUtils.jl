@@ -109,6 +109,7 @@ function Base.show(io :: IO, ba :: BA)
 end
 
 function readbal(filename)
+    isfile(filename) || SystemError("$filename is not a file")
     if splitext(filename)[2] == ".bbal"
         open(filename) do f
             num_cameras = read(f, UInt64) |> ntoh
