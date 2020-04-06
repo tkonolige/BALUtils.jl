@@ -45,7 +45,7 @@ Base.adjoint(v :: AngleAxis) = transpose(v)
 
 struct Camera{T}
     pose :: SVector{3,T}
-    rotation :: RodriguesVec{T}
+    rotation :: SVector{3,T}
     intrinsics :: SVector{3,T}
 end
 
@@ -53,12 +53,13 @@ end
 Construct a camera from a rotation, translation, instrinsics vector.
 """
 function Camera(x :: AbstractArray)
-    Camera(SVector{3,Float64}(x[4:6]), RodriguesVec(x[1], x[2], x[3]), SVector{3,Float64}(x[7:9]))
+    Camera(SVector{3,Float64}(x[4:6]), SVector{3,Float64}(x[1], x[2], x[3]), SVector{3,Float64}(x[7:9]))
 end
 
+rot(c :: Camera) = RodriguesVec(c.rotation...)
 pose(c :: Camera) = c.pose
-center(c :: Camera) = -(c.rotation' * pose(c))
-Base.vec(c :: Camera) = vcat([c.rotation.sx, c.rotation.sy, c.rotation.sz], c.pose, c.intrinsics)
+center(c :: Camera) = -(rot(c)' * pose(c))
+Base.vec(c :: Camera) = vcat(c.rotation, c.pose, c.intrinsics)
 
 function axisangle(x :: Array{Float64, 2})
     u = [x[3,2]-x[2,3], x[3,1]-x[1,3], x[2,1] - x[1,2]]
